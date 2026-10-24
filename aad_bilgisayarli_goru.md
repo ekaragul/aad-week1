@@ -101,7 +101,7 @@ Geleneksel renk filtrelemenin yetersiz kaldığı karmaşık ortamlarda, öncede
    * Yalnızca ilgilendiğiniz sınıfı (örneğin `"person"`) seçin; diğer sınıfları filtreleyip ekrana çizmeyin.
 4. **Görselleştirme:** Hedef sınıf tespit edildiğinde nesnenin etrafına sınırlayıcı kutu çizin ve üst kısmına sınıf adını veya alarm mesajını yazdırın.
 
-### 🔍 Önerilen Fonksiyonlar & Kütüphaneler
+### Önerilen Fonksiyonlar & Kütüphaneler
 * `from ultralytics import YOLO`
 * `YOLO("model_adi.pt")`
 * `model(frame)` *(Kare üzerinde çıkarım çalıştırma)*  // **model(frame, stream=True, verbose=False)** *(Verimli kullanım için önerilen ayarlar)*
@@ -110,6 +110,40 @@ Geleneksel renk filtrelemenin yetersiz kaldığı karmaşık ortamlarda, öncede
 * `boxes.cls` *(Sınıf indeksini okuma)*
 * `model.names` *(Sınıf ID'sini insan tarafından okunabilir ada dönüştürme)*
 * `cv2.rectangle()` & `cv2.putText()`
+
+---
+
+---
+
+## GÖREV 4: Çoklu Hedef Takibi & Tekil Hedefe Kilitlenme (ByteTrack / BoT-SORT)
+
+### Amaç
+Geleneksel tespit algoritmaları nesneleri her karede bağımsız olarak algılar; nesnelerin kimliğini (ID) zaman boyunca koruyamaz. Bu görevin amacı, tespit edilen hedeflere benzersiz birer kimlik (Track ID) atamak, sahneden anlık kaybolup geri gelen hedeflerin takibini sürdürmek ve belirlenen tek bir hedefe kilitlenerek (Target Lock) hedefin hareket yörüngesini ekranda görselleştirmektir.
+
+### Görev Tanımı
+1. **Tespit Yerine Takip Akışı:**
+   - Görev 3'te kullanılan `model(frame)` çağrısı yerine nesne takip motorunu devreye sokan `model.track()` fonksiyonunu kullanın.
+   - Takibin kareler arası sürekliliğini sağlamak için kalıcılık parametresini (`persist=True`) aktif edin ve takip algoritması olarak `tracker="bytetrack.yaml"` belirleyin.
+
+2. **Kimlik (Track ID) Çıkarımı & Hata Yönetimi:**
+   - Model çıktısından kutu koordinatlarının yanı sıra nesneye atanan tekil kimliği (`box.id`) okuyun.
+   - Bazı karelerde model henüz ID atayamamış olabileceğinden (`box.id is None`), olası çökmeleri önlemek için kontrol mekanizması kurun.
+
+3. **Hedefe Kilitlenme Mantığı (Lock-on Mechanism):**
+   - Sahneye giren hedeflerden birini "kilitli hedef" (`locked_id`) olarak sabitleyin (Örn. ekran merkezine en yakın nesne veya klavyeden `L` tuşuna basıldığında merkezdeki hedef).
+   - Diğer nesnelerin kutularını nötr bir renkte (ör. ince beyaz/gri), kilitlenen hedefi ise vurgulu bir renkte (ör. kalın kırmızı) çizin ve üzerine `[KİLİTLENDİ - ID: X]` yazdırın.
+   - Kilitli hedef kadrajdan tamamen çıkarsa kilidi boşa çıkarıp yeni hedef arama moduna geçin.
+
+4. **Yörünge Geçmişi Çizimi (Motion Trail):**
+   - Kilitlenen hedefin merkez koordinatlarını son $N$ kare (ör. 30 kare) boyunca saklayın.
+   - Saklanan merkez noktalarını birbirine bağlayan kesintisiz bir rota çizgisi çizdirin.
+
+### Önerilen Fonksiyonlar & İpuçları
+- `model.track(frame, persist=True, tracker="bytetrack.yaml")` *(Canlı takip başlatma)*
+- `boxes.id.int().cpu().tolist()` *(Tensor kimliklerini Python tamsayı listesine çevirme)*
+- `from collections import deque` *(Maksimum uzunluk aşıldığında eski elemanları otomatik silen yörünge kuyruğu için)*
+- `cv2.polylines()` *(Hedefin geçmiş rota çizgisini ekrana basmak için)*
+- `np.array(points, dtype=np.int32)` *(`cv2.polylines` girdi koordinatlarının tamsayı matrisi olması gerekir)*
 
 ---
 
